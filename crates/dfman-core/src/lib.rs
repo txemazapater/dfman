@@ -3,6 +3,26 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LaunchContext {
+    pub current_path: PathBuf,
+    pub left_path: Option<PathBuf>,
+    pub right_path: Option<PathBuf>,
+    pub selected_entries: Vec<PathBuf>,
+}
+
+impl LaunchContext {
+    #[must_use]
+    pub fn at(path: impl Into<PathBuf>) -> Self {
+        Self {
+            current_path: path.into(),
+            left_path: None,
+            right_path: None,
+            selected_entries: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SnapshotEntry {
     pub path: PathBuf,
     pub is_dir: bool,
@@ -54,9 +74,20 @@ impl DirectorySnapshot {
 
 #[cfg(test)]
 mod tests {
-    use super::DirectorySnapshot;
+    use super::{DirectorySnapshot, LaunchContext};
     use std::fs;
+    use std::path::PathBuf;
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn launch_context_starts_without_optional_panel_or_selection_state() {
+        let context = LaunchContext::at("example");
+
+        assert_eq!(context.current_path, PathBuf::from("example"));
+        assert!(context.left_path.is_none());
+        assert!(context.right_path.is_none());
+        assert!(context.selected_entries.is_empty());
+    }
 
     #[test]
     fn scans_a_directory_without_recursing() {
