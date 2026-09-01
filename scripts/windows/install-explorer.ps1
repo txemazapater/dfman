@@ -8,12 +8,12 @@ $entries = @(
     @{
         Key = 'HKCU:\Software\Classes\Directory\shell\dfman'
         Label = 'Open in dfman'
-        Command = ('"{0}" open "%1"' -f $exe)
+        Command = ('"{0}" --pause open "%1"' -f $exe)
     },
     @{
         Key = 'HKCU:\Software\Classes\Directory\Background\shell\dfman'
         Label = 'Open dfman here'
-        Command = ('"{0}" open "%V"' -f $exe)
+        Command = ('"{0}" --pause open "%V"' -f $exe)
     }
 )
 
@@ -29,4 +29,5 @@ foreach ($entry in $entries) {
 
 Write-Host 'Explorer integration installed for the current user.'
 Write-Host "Executable: $exe"
+Write-Host 'Explorer launches dfman with --pause so the output remains visible.'
 Write-Host 'On Windows 11 the entry may initially appear under "Show more options".'
