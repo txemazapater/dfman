@@ -14,31 +14,28 @@ fn run() -> Result<(), String> {
         return Err("missing command".to_owned());
     };
 
-    match command.as_str() {
-        "scan" => {
-            let Some(path) = args.next() else {
-                print_usage();
-                return Err("missing path".to_owned());
-            };
-
-            if args.next().is_some() {
-                print_usage();
-                return Err("too many arguments".to_owned());
-            }
-
-            let snapshot = DirectorySnapshot::scan(&path)
-                .map_err(|error| format!("cannot scan {path}: {error}"))?;
-
-            println!("Snapshot: {}", snapshot.root.display());
-            println!("Entries: {}", snapshot.entries.len());
-            println!("Files: {}", snapshot.file_count());
-            println!("Directories: {}", snapshot.directory_count());
-            Ok(())
-        }
-        _ => {
+    if command.as_str() == "scan" {
+        let Some(path) = args.next() else {
             print_usage();
-            Err(format!("unknown command: {command}"))
+            return Err("missing path".to_owned());
+        };
+
+        if args.next().is_some() {
+            print_usage();
+            return Err("too many arguments".to_owned());
         }
+
+        let snapshot = DirectorySnapshot::scan(&path)
+            .map_err(|error| format!("cannot scan {path}: {error}"))?;
+
+        println!("Snapshot: {}", snapshot.root.display());
+        println!("Entries: {}", snapshot.entries.len());
+        println!("Files: {}", snapshot.file_count());
+        println!("Directories: {}", snapshot.directory_count());
+        Ok(())
+    } else {
+        print_usage();
+        Err(format!("unknown command: {command}"))
     }
 }
 
