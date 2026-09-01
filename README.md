@@ -8,7 +8,7 @@ The project explores a fast, predictable and keyboard-first way to perform commo
 
 **Phase 1 — executable Rust foundation.**
 
-The implementation language is Rust. The repository is a Cargo workspace with a minimal core library and CLI. The current executable deliberately exposes only a small surface (`scan` and `open`) so the toolchain, launch context, architecture and CI can be validated before native Windows filesystem optimizations or the terminal UI are introduced.
+The implementation language is Rust. The repository is a Cargo workspace with a minimal core library and CLI. The current executable deliberately exposes only a small surface (`scan`, `benchmark` and `open`) so the toolchain, launch context, architecture and CI can be validated before native Windows filesystem optimizations or the terminal UI are introduced.
 
 Two reference repositories remain part of the architectural research:
 
@@ -114,10 +114,22 @@ The current commands are:
 
 ```text
 dfman scan <path>
+dfman benchmark <path> [--runs <n>]
 dfman open <path> [--left <path>] [--right <path>] [--select <path>]...
 ```
 
 `scan` builds a cheap, non-recursive `DirectorySnapshot` and reports the number of entries, files and directories. This implementation intentionally uses the Rust standard library first. A Windows-native enumerator inspired by FAR Manager will replace or complement it after the behavioural contract and benchmarks are in place.
+
+`benchmark` measures the current snapshot backend. It performs one warmup scan and five measured scans by default, reporting minimum, average and maximum elapsed time plus entries per second. Use `--runs <n>` to change the number of measured iterations. The benchmark aborts if the number of directory entries changes between runs.
+
+Example:
+
+```powershell
+dfman benchmark C:\Windows\System32
+dfman benchmark D:\HugeDirectory --runs 10
+```
+
+The initial backend is labelled `std::fs`; future Windows-native backends will use the same output contract so measurements can be compared directly.
 
 `open` builds and displays the initial `LaunchContext`. It is the contract that will later initialize the TUI from Explorer, a shell, another application or automation.
 
