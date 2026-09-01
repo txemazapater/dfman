@@ -6,37 +6,93 @@ The project explores a fast, predictable and keyboard-first way to perform commo
 
 ## Project status
 
-**Phase 0 — architectural research and scope definition.**
+**Phase 1 — executable Rust foundation.**
 
-No implementation language, terminal UI framework or final architecture has been selected yet.
+The implementation language is Rust. The repository is now a Cargo workspace with a minimal core library and CLI. The current executable only implements a deliberately small `scan` command so the toolchain, architecture and CI can be validated before native Windows filesystem optimizations or the terminal UI are introduced.
 
-Two reference repositories are being analysed:
+Two reference repositories remain part of the architectural research:
 
-- `txemazapater/FarManager` — reference for terminal interaction, keyboard-driven workflow and mature filesystem behaviour.
+- `txemazapater/FarManager` — reference for terminal interaction, keyboard-driven workflow and mature Windows filesystem behaviour.
 - `txemazapater/doublecmd` — reference for separation between file sources, operations and user interface.
 
 These repositories are study material. dfman is not intended to be a direct fork or a reduced clone of either project.
 
-## Initial intent
-
-The first goal is intentionally modest: make routine operations on files and directories fast, explicit and predictable.
-
-Candidate core operations include navigation, selection, copy, move, rename, delete and directory creation. More advanced capabilities such as search, compare, synchronization, batch rename or virtual file sources remain future possibilities rather than initial requirements.
-
-## Architectural direction under evaluation
-
-A promising direction identified during the initial review is to separate:
+## Current workspace
 
 ```text
-Terminal UI
-    |
-Command / interaction layer
-    |
-File operation engine
-    |
-Filesystem / file-source abstraction
+crates/
+  dfman-core/   domain and filesystem-neutral core concepts
+  dfman-cli/    current command-line executable
 ```
 
-The terminal UI should orchestrate and present operations, not implement them.
+Additional crates will be introduced only when the architecture requires them. Likely future boundaries include filesystem backends, operation planning/execution, journal/history, declarative DSL, natural-intent resolution and the terminal UI.
 
-See `docs/research/001-far-vs-doublecmd.md` for the first comparative notes.
+## Local setup
+
+The repository pins Rust in `rust-toolchain.toml`. After installing Rust with `rustup` and the required Windows MSVC build tools, verify the environment with:
+
+```text
+rustc --version
+cargo --version
+```
+
+Then clone or update the repository and run:
+
+```text
+cargo test
+cargo run -- scan .
+```
+
+A release build can be produced with:
+
+```text
+cargo build --release
+```
+
+## First executable behaviour
+
+The current MVP command is:
+
+```text
+dfman scan <path>
+```
+
+It builds a cheap, non-recursive `DirectorySnapshot` and reports the number of entries, files and directories. This implementation intentionally uses the Rust standard library first. A Windows-native enumerator inspired by FAR Manager will replace or complement it after the behavioural contract and benchmarks are in place.
+
+## Architectural direction
+
+The current conceptual flow is:
+
+```text
+Terminal UI / CLI
+       |
+Natural intent / declarative DSL
+       |
+      Basket
+       |
+OperationPlan
+       |
+ Validation
+       |
+ Execution
+       |
+  Journal / Undo
+       |
+Filesystem / FileSource
+```
+
+The terminal UI must orchestrate and present operations, not implement them. Natural-language interpretation, including a possible local LLM, may propose structured intent but must never access the filesystem directly.
+
+## CI
+
+GitHub Actions validates the workspace on Windows and Linux with:
+
+```text
+cargo fmt --check
+cargo check
+cargo clippy -D warnings
+cargo test
+cargo build --release
+```
+
+See `docs/` for the research notes, design documents and architectural decisions that define the project before implementation grows.
