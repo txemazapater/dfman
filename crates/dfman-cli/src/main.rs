@@ -20,8 +20,8 @@ fn run_scan(mut args: impl Iterator<Item = String>) -> Result<(), String> {
         return Err("too many arguments".to_owned());
     }
 
-    let snapshot = DirectorySnapshot::scan(&path)
-        .map_err(|error| format!("cannot scan {path}: {error}"))?;
+    let snapshot =
+        DirectorySnapshot::scan(&path).map_err(|error| format!("cannot scan {path}: {error}"))?;
 
     println!("Snapshot: {}", snapshot.root.display());
     println!("Entries: {}", snapshot.entries.len());
