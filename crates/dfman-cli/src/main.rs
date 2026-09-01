@@ -1,14 +1,22 @@
 use dfman_core::{DirectorySnapshot, LaunchContext};
 use std::env;
+use std::io;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::{Duration, Instant};
 
 fn print_usage() {
     eprintln!("Usage:");
-    eprintln!("  dfman scan <path>");
-    eprintln!("  dfman benchmark <path> [--runs <n>]");
-    eprintln!("  dfman open <path> [--left <path>] [--right <path>] [--select <path>]...");
+    eprintln!("  dfman [--pause] scan <path>");
+    eprintln!("  dfman [--pause] benchmark <path> [--runs <n>]");
+    eprintln!("  dfman [--pause] open <path> [--left <path>] [--right <path>] [--select <path>]...");
+}
+
+fn pause_before_exit() {
+    eprintln!();
+    eprintln!("Press Enter to close...");
+    let mut input = String::new();
+    let _ = io::stdin().read_line(&mut input);
 }
 
 fn take_single_path(mut args: impl Iterator<Item = String>) -> Result<String, String> {
@@ -169,8 +177,8 @@ fn run_open(mut args: impl Iterator<Item = String>) -> Result<(), String> {
     Ok(())
 }
 
-fn run() -> Result<(), String> {
-    let mut args = env::args().skip(1);
+fn run(args: impl Iterator<Item = String>) -> Result<(), String> {
+    let mut args = args.peekable();
 
     let Some(command) = args.next() else {
         print_usage();
@@ -189,11 +197,24 @@ fn run() -> Result<(), String> {
 }
 
 fn main() -> ExitCode {
-    match run() {
+    let mut args = env::args().skip(1).peekable();
+    let pause = matches!(args.peek().map(String::as_str), Some("--pause"));
+    if pause {
+        args.next();
+    }
+
+    let result = run(args);
+    let exit_code = match result {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("dfman: {error}");
             ExitCode::FAILURE
         }
+    };
+
+    if pause {
+        pause_before_exit();
     }
+
+    exit_code
 }
