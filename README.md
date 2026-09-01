@@ -8,7 +8,7 @@ The project explores a fast, predictable and keyboard-first way to perform commo
 
 **Phase 1 — executable Rust foundation.**
 
-The implementation language is Rust. The repository is now a Cargo workspace with a minimal core library and CLI. The current executable only implements a deliberately small `scan` command so the toolchain, architecture and CI can be validated before native Windows filesystem optimizations or the terminal UI are introduced.
+The implementation language is Rust. The repository is a Cargo workspace with a minimal core library and CLI. The current executable deliberately exposes only a small surface (`scan` and `open`) so the toolchain, launch context, architecture and CI can be validated before native Windows filesystem optimizations or the terminal UI are introduced.
 
 Two reference repositories remain part of the architectural research:
 
@@ -23,6 +23,12 @@ These repositories are study material. dfman is not intended to be a direct fork
 crates/
   dfman-core/   domain and filesystem-neutral core concepts
   dfman-cli/    current command-line executable
+
+scripts/windows/
+  bootstrap-local.ps1     initialize a freshly cloned local development copy
+  update-local.ps1        git pull, test and reinstall dfman locally
+  install-explorer.ps1    register Explorer context-menu integration
+  uninstall-explorer.ps1  remove Explorer context-menu integration
 ```
 
 Additional crates will be introduced only when the architecture requires them. Likely future boundaries include filesystem backends, operation planning/execution, journal/history, declarative DSL, natural-intent resolution and the terminal UI.
@@ -36,28 +42,84 @@ rustc --version
 cargo --version
 ```
 
-Then clone or update the repository and run:
+For a freshly cloned repository on Windows:
 
-```text
-cargo test
-cargo run -- scan .
+```powershell
+.\scripts\windows\bootstrap-local.ps1
 ```
 
-A release build can be produced with:
+This checks the required tools, formats and tests the workspace, and installs `dfman.exe` through Cargo. With the normal rustup setup the executable is placed in `%USERPROFILE%\.cargo\bin`, which is normally already in `PATH`.
 
-```text
-cargo build --release
+Verify with:
+
+```powershell
+where.exe dfman
+dfman scan .
+dfman open .
 ```
 
-## First executable behaviour
+## Updating the local executable
 
-The current MVP command is:
+Once the repository is already cloned, the normal local update cycle is:
+
+```powershell
+.\scripts\windows\update-local.ps1
+```
+
+The script performs:
+
+```text
+git pull --ff-only
+cargo fmt --all
+cargo test --workspace
+cargo install --path crates/dfman-cli --force
+```
+
+After it completes, the globally available `dfman` command points to the newly built local version.
+
+## Windows Explorer integration
+
+After `dfman` has been installed into Cargo's bin directory, register the experimental Explorer integration with:
+
+```powershell
+.\scripts\windows\install-explorer.ps1
+```
+
+The registration is made only for the current user under `HKCU\Software\Classes`; administrator privileges are not required.
+
+It currently adds context-menu actions for:
+
+```text
+Directory               -> Open in dfman
+Directory background    -> Open dfman here
+```
+
+The actions launch the same executable and pass the selected/current directory as launch context:
+
+```text
+dfman open <path>
+```
+
+On Windows 11 these classic shell entries may initially appear under **Show more options**.
+
+To remove the integration completely:
+
+```powershell
+.\scripts\windows\uninstall-explorer.ps1
+```
+
+## Current executable behaviour
+
+The current commands are:
 
 ```text
 dfman scan <path>
+dfman open <path> [--left <path>] [--right <path>] [--select <path>]...
 ```
 
-It builds a cheap, non-recursive `DirectorySnapshot` and reports the number of entries, files and directories. This implementation intentionally uses the Rust standard library first. A Windows-native enumerator inspired by FAR Manager will replace or complement it after the behavioural contract and benchmarks are in place.
+`scan` builds a cheap, non-recursive `DirectorySnapshot` and reports the number of entries, files and directories. This implementation intentionally uses the Rust standard library first. A Windows-native enumerator inspired by FAR Manager will replace or complement it after the behavioural contract and benchmarks are in place.
+
+`open` builds and displays the initial `LaunchContext`. It is the contract that will later initialize the TUI from Explorer, a shell, another application or automation.
 
 ## Architectural direction
 
