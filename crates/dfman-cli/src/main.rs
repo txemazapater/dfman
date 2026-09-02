@@ -9,7 +9,9 @@ fn print_usage() {
     eprintln!("Usage:");
     eprintln!("  dfman [--pause] scan <path>");
     eprintln!("  dfman [--pause] benchmark <path> [--runs <n>]");
-    eprintln!("  dfman [--pause] open <path> [--left <path>] [--right <path>] [--select <path>]...");
+    eprintln!(
+        "  dfman [--pause] open <path> [--left <path>] [--right <path>] [--select <path>]..."
+    );
 }
 
 fn pause_before_exit() {
@@ -71,8 +73,8 @@ fn run_benchmark(mut args: impl Iterator<Item = String>) -> Result<(), String> {
     }
 
     let warmup_start = Instant::now();
-    let warmup = DirectorySnapshot::scan(&path)
-        .map_err(|error| format!("cannot scan {path}: {error}"))?;
+    let warmup =
+        DirectorySnapshot::scan(&path).map_err(|error| format!("cannot scan {path}: {error}"))?;
     let warmup_elapsed = warmup_start.elapsed();
 
     let entries = warmup.entries.len();
@@ -94,8 +96,14 @@ fn run_benchmark(mut args: impl Iterator<Item = String>) -> Result<(), String> {
         durations.push(elapsed);
     }
 
-    let min = *durations.iter().min().expect("benchmark has at least one run");
-    let max = *durations.iter().max().expect("benchmark has at least one run");
+    let min = *durations
+        .iter()
+        .min()
+        .expect("benchmark has at least one run");
+    let max = *durations
+        .iter()
+        .max()
+        .expect("benchmark has at least one run");
     let total = durations.iter().copied().sum::<Duration>();
     let average = total / runs;
     let entries_per_second = if average.is_zero() {
