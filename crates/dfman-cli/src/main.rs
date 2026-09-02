@@ -106,10 +106,11 @@ fn run_benchmark(mut args: impl Iterator<Item = String>) -> Result<(), String> {
         .expect("benchmark has at least one run");
     let total = durations.iter().copied().sum::<Duration>();
     let average = total / runs;
+    let entries_u128 = u128::try_from(entries).expect("usize always fits into u128");
     let entries_per_second = if average.is_zero() {
-        f64::INFINITY
+        u128::MAX
     } else {
-        entries as f64 / average.as_secs_f64()
+        entries_u128.saturating_mul(1_000_000_000) / average.as_nanos()
     };
 
     println!("dfman benchmark");
@@ -123,7 +124,7 @@ fn run_benchmark(mut args: impl Iterator<Item = String>) -> Result<(), String> {
     println!("Min: {:.3} ms", min.as_secs_f64() * 1_000.0);
     println!("Average: {:.3} ms", average.as_secs_f64() * 1_000.0);
     println!("Max: {:.3} ms", max.as_secs_f64() * 1_000.0);
-    println!("Rate: {:.0} entries/s", entries_per_second);
+    println!("Rate: {entries_per_second} entries/s");
 
     Ok(())
 }
